@@ -2,77 +2,84 @@ import streamlit as st
 import google.generativeai as genai
 from PyPDF2 import PdfReader
 
-# --- Sayfa Ayarları ---
-st.set_page_config(page_title="Akıllı PDF Botu", layout="wide")
-st.title("📄 PDF ile Konuş (Otomatik Model Seçimi)")
+# --- Page Configuration ---
+st.set_page_config(page_title="Smart PDF Bot", layout="wide")
+st.title("📄 Chat with PDF (Smart Model Selection)")
 
-# --- Yan Menü ---
+# --- Sidebar (Settings) ---
 with st.sidebar:
-    st.header("1. Ayarlar")
+    st.header("1. Settings")
     api_key = st.text_input("Google Gemini API Key:", type="password")
-    st.markdown("[Key Almak İçin Tıkla](https://aistudio.google.com/app/apikey)")
+    st.markdown("[Get API Key Here](https://aistudio.google.com/app/apikey)")
     
-    # --- DİNAMİK MODEL SEÇİCİ ---
+    # --- DYNAMIC MODEL SELECTOR ---
     selected_model_name = None
     if api_key:
         try:
-            # API'yi kur
+            # Configure API
             genai.configure(api_key=api_key)
             
-            # Google'a sor: "Hangi modellerin var?"
+            # Ask Google: "Which models are available?"
             model_list = []
             for m in genai.list_models():
-                # Sadece sohbet edebilen modelleri al
+                # Filter only models that support content generation
                 if 'generateContent' in m.supported_generation_methods:
                     model_list.append(m.name)
             
-            # Listeyi kutuya koy
+            # Populate the dropdown
             if model_list:
-                selected_model_name = st.selectbox("Kullanılacak Model:", model_list, index=0)
-                st.success(f"✅ {selected_model_name} seçildi.")
+                selected_model_name = st.selectbox("Select Model:", model_list, index=0)
+                st.success(f"✅ {selected_model_name} selected.")
             else:
-                st.error("Hiçbir model bulunamadı. API Key yetkilerini kontrol et.")
+                st.error("No models found. Please check your API Key permissions.")
                 
         except Exception as e:
-            st.error(f"API Hatası: {e}")
+            st.error(f"API Error: {e}")
 
-    st.header("2. Dosya Yükle")
-    uploaded_files = st.file_uploader("PDF Dosyalarını Seç", accept_multiple_files=True, type="pdf")
+    st.header("2. Upload Documents")
+    uploaded_files = st.file_uploader("Choose PDF files", accept_multiple_files=True, type="pdf")
 
-# --- Ana Fonksiyon ---
+# --- Main Logic ---
 def get_response(files, user_question, key, model_name):
     genai.configure(api_key=key)
-    model = genai.GenerativeModel(model_name) # Seçilen modeli kullan
+    model = genai.GenerativeModel(model_name) 
     
-    # PDF Oku
+    # Read PDF Files
     full_text = ""
     for file in files:
         reader = PdfReader(file)
         for page in reader.pages:
             full_text += page.extract_text() + "\n"
     
-    # Prompt
+    # English Prompt for the AI
     prompt = f"""
-    Aşağıdaki metne göre soruyu cevapla.
-    METİN: {full_text}
-    SORU: {user_question}
+    You are a helpful AI assistant. Answer the question strictly based on the provided context below.
+    
+    CONTEXT:
+    {full_text}
+    
+    QUESTION:
+    {user_question}
     """
     
-    with st.spinner(f"Yapay zeka ({model_name}) düşünüyor..."):
+    with st.spinner(f"AI ({model_name}) is processing..."):
         response = model.generate_content(prompt)
         return response.text
 
-# --- Çalıştırma ---
+# --- App Execution ---
 if api_key and uploaded_files and selected_model_name:
-    user_question = st.chat_input("Sorunu sor...")
+    user_question = st.chat_input("Ask a question about your PDF...")
     
+    # Session State for Chat History
     if "history" not in st.session_state:
         st.session_state.history = []
         
+    # Display Chat History
     for role, text in st.session_state.history:
         with st.chat_message(role):
             st.write(text)
             
+    # Handle User Input
     if user_question:
         st.session_state.history.append(("user", user_question))
         with st.chat_message("user"):
@@ -84,7 +91,9 @@ if api_key and uploaded_files and selected_model_name:
             with st.chat_message("assistant"):
                 st.write(answer)
         except Exception as e:
-            st.error(f"Hata: {e}")
+            st.error(f"Error: {e}")
 
 elif not api_key:
-    st.info("👈 Önce API Key gir, sonra model listesi yüklenecek.")
+    st.info("👈 Please enter your API Key in the sidebar to load available models.")
+elif not uploaded_files:
+    st.info("👈 Please upload a PDF file to start chatting.")
