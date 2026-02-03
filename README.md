@@ -4,9 +4,6 @@ A Streamlit-based AI Chatbot that allows you to "chat" with your PDF documents u
 
 Unlike standard RAG implementations, **this app dynamically fetches available models from your API Key**, ensuring compatibility even if Google changes model names (e.g., `gemini-pro` vs `gemini-1.5-flash`).
 
-![Demo App Screenshot](https://via.placeholder.com/800x400?text=Please+Upload+Your+App+Screenshot+Here)
-*(Note: Replace the link above with your actual app screenshot)*
-
 ## 🚀 Features
 
 * **🔍 Dynamic Model Detection:** Automatically connects to Google API, lists available models compatible with your key, and lets you choose the best one. No more "404 Model Not Found" errors!
@@ -60,5 +57,6 @@ Unlike standard RAG implementations, **this app dynamically fetches available mo
 Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📄 License
+
 
 This project is open source and available under the [MIT License](LICENSE).
